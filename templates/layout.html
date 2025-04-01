@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yes It Works!</title>
+    <style>
+        body { max-width: 800px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif; }
+        .chat-container { margin: 20px 0; border: 1px solid #ddd; border-radius: 5px; padding: 20px; max-height: 400px; overflow-y: auto; }
+        .message { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .user-message { background-color: #e3f2fd; margin-left: 20%; }
+        .assistant-message { background-color: #f5f5f5; margin-right: 20%; }
+        .chat-form { margin-top: 20px; }
+        input[type="text"] { width: 80%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 20px; background-color: #2196f3; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #1976d2; }
+        
+        /* Tab styles */
+        .tabs {
+            display: flex;
+            margin: 20px 0;
+            border-bottom: 2px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-right: 5px;
+            border-radius: 5px 5px 0 0;
+            background: #f5f5f5;
+        }
+        .tab.active {
+            background: #2196f3;
+            color: white;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .image-section {
+            margin: 20px 0;
+            text-align: center;
+        }
+        .generated-image {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: none;
+        }
+        .image-form {
+            margin: 20px 0;
+            text-align: center;
+        }
+    </style>
+    <script>
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            // Deactivate all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content and activate tab
+            document.getElementById(tabName).classList.add('active');
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+        }
+
+        async function generateImage() {
+            const prompt = document.getElementById('image-prompt').value;
+            const imageDisplay = document.getElementById('generated-image');
+            const form = document.getElementById('image-form');
+            
+            try {
+                const response = await fetch('/generate-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `prompt=${encodeURIComponent(prompt)}`
+                });
+                
+                const data = await response.json();
+                if (data.image_url) {
+                    imageDisplay.src = data.image_url;
+                    imageDisplay.style.display = 'block';
+                } else {
+                    alert('Failed to generate image');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error generating image');
+            }
+        }
+    </script>
+</head>
+<body>
+    {% include "navbar.html" %}
+    
+    <h1>Yes It Works!</h1>
+    <p>Embrace uncertainty and be willing to experiment.</p>
+
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('chat-tab')">Chat</div>
+        <div class="tab" onclick="switchTab('image-tab')">Image Generation</div>
+    </div>
+
+    <div id="chat-tab" class="tab-content active">
+        <div class="chat-container">
+            {% for message in messages %}
+                {% if message.role not in ['system'] %}
+                    <div class="message {% if message.role == 'user' %}user-message{% else %}assistant-message{% endif %}">
+                        {{ message.content }}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <form class="chat-form" action="/" method="post">
+            <input type="text" name="user_input" placeholder="Type your Python question..." required autofocus>
+            <button type="submit">Send</button>
+        </form>
+    </div>
+
+    <div id="image-tab" class="tab-content">
+        <div class="image-section">
+            <form id="image-form" class="image-form" onsubmit="event.preventDefault(); generateImage();">
+                <input type="text" id="image-prompt" placeholder="Describe the image you want to generate..." required>
+                <button type="submit">Generate Image</button>
+            </form>
+            <img id="generated-image" class="generated-image" alt="Generated image will appear here">
+        </div>
+    </div>
+</body>
+</html>
